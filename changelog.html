@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ADHD Protocol - Changelog</title>
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;">
+    <style>
+        :root {
+            --bg-color: #202020;
+            --text-color: #dcddde;
+            --accent: #7c4dff;
+            --accent-hover: #9965f4;
+            --card-bg: #2b2b2b;
+            --border: #404040;
+            --folder-color: #4a4a4a;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 700px;
+            display: grid;
+            gap: 20px;
+        }
+
+        /* Reusing card style but adapting for details/summary */
+        details {
+            background: var(--card-bg);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            transition: all 0.2s;
+        }
+
+        details[open] {
+            border-color: var(--accent);
+        }
+
+        summary {
+            padding: 20px 24px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1.1rem;
+            list-style: none;
+            /* Hide default triangle */
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        summary:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        summary::-webkit-details-marker {
+            display: none;
+        }
+
+        summary::after {
+            content: '+';
+            font-weight: bold;
+            font-size: 1.2rem;
+            color: #888;
+            transition: transform 0.2s;
+        }
+
+        details[open] summary::after {
+            transform: rotate(45deg);
+        }
+
+        .version-content {
+            padding: 0 24px 24px 24px;
+            border-top: 1px solid #333;
+        }
+
+        h3 {
+            margin-top: 20px;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            color: #888;
+            letter-spacing: 0.5px;
+        }
+
+        ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        li {
+            margin-bottom: 6px;
+            line-height: 1.5;
+        }
+
+        .tag {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+
+        .tag-latest {
+            background: var(--accent);
+            color: white;
+        }
+
+        .type-added {
+            color: #81c784;
+        }
+
+        .type-changed {
+            color: #ffd54f;
+        }
+
+        .type-fixed {
+            color: #e57373;
+        }
+
+        .nav {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .nav a {
+            color: #888;
+            font-weight: bold;
+            text-decoration: none;
+        }
+
+        .nav a:hover {
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="nav">
+        <a href="adhd-protocol.html">Home</a>
+        <a href="README.html">README</a>
+        <a href="changelog.html" style="color: white;">Changelog</a>
+    </div>
+
+    <div class="container">
+        <h1>Changelog</h1>
+
+        <!-- TEMPLATE START: Copy this block for a new version -->
+        <div
+            style="background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 20px; text-align: center;">
+            <p style="margin: 0; font-size: 1.1rem;">
+                You can check for updates on the <a href="https://github.com/sudosocks/adhd-protocol/releases"
+                    target="_blank" rel="noopener noreferrer" style="color: var(--accent); font-weight: bold;">official
+                    release page on
+                    GitHub</a>.
+            </p>
+        </div>
+        <!-- TEMPLATE END -->
+
+        <!-- PREVIOUS VERSIONS EXAMPLE (Closed by default) -->
+
+        <!-- TEMPLATE START: Copy this block for a new version -->
+        <details open>
+            <summary>
+                v1.0.0
+                <span class="tag tag-latest">This version</span>
+            </summary>
+            <div class="version-content">
+                <div class="date" style="margin-top: 10px; color: #666; font-size: 0.8rem;">Released: Feb 7, 2026
+                    (Placeholder date)</div>
+
+                <h3 class="type-added">Added</h3>
+                <ul>
+                    <li>Initial release of the ADHD Protocol Dashboard.</li>
+                    <li>Focus Timer with flashing alerts.</li>
+                    <li>Obsidian integration for Daily Notes (1010), Weekly Reviews (1020), Quick Capture, and Meeting
+                        Notes.</li>
+                    <li><strong>Enhanced Status Reports (2000):</strong> Weekly (2010) and Monthly (2020) views with
+                        task tables (tracking daily, weekly, and monthly progress) and meeting summaries.</li>
+                    <li><strong>Structure:</strong> Notes are now organized under "1000 Notes" with dedicated
+                        subfolders.</li>
+                    <li><strong>People Directory (5000):</strong> New "Team Directory" feature to list people grouped by
+                        team and role.</li>
+                    <li><strong>3000 Meeting Notes:</strong> Dedicated folder for meeting notes with automated templates
+                        capturing date, time, and attendees.</li>
+                    <li><strong>4000 Suggestions:</strong> New system for tracking improvements and ideas with status
+                        workflow.</li>
+                    <li>Added navigation links to Weekly and Monthly Reviews.</li>
+                    <li>Centralized quote logic for consistent footer messages.</li>
+                </ul>
+            </div>
+        </details>
+        <!-- TEMPLATE END -->
+
+        <!-- PREVIOUS VERSIONS EXAMPLE (Closed by default) -->
+        <!-- 
+        <details>
+            <summary>v0.9.0 - Beta</summary>
+            <div class="version-content">
+                <h3 class="type-added">Added</h3>
+                <ul>
+                    <li>Beta testing phase.</li>
+                </ul>
+            </div>
+        </details> 
+        -->
+
+        <footer style="font-size: 0.7rem; text-align: center; color: #666; margin-top: 2rem; margin-bottom: 2rem;">
+            Free & Open-Source Software, Developed by <a href="https://github.com/sudosocks" target="_blank"
+                rel="noopener noreferrer" style="color: inherit; text-decoration: underline;">sudosocks</a>
+            <br><br>Please consider supporting my work at <a href="https://ko-fi.com/sudosocks" target="_blank"
+                rel="noopener noreferrer" style="color: inherit; text-decoration: underline;">Ko-fi</a>
+            <br><br><br><br><span id="quote-display">Meow!</span>
+        </footer>
+        <script src="quotes.js"></script>
+</body>
+
+</html>

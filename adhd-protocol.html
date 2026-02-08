@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ADHD Protocol</title>
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;">
+    <style>
+        :root {
+            --bg-color: #202020;
+            --text-color: #dcddde;
+            --accent: #7c4dff;
+            --accent-hover: #9965f4;
+            --card-bg: #2b2b2b;
+            --border: #404040;
+            --folder-color: #4a4a4a;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 700px;
+            display: grid;
+            gap: 20px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            padding: 24px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+        }
+
+        h2 {
+            margin-top: 0;
+            font-size: 1.1rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #888;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+
+        /* Focus Input */
+        #focus-input {
+            width: 100%;
+            padding: 16px;
+            font-size: 1.75rem;
+            text-align: center;
+            background: #1a1a1a;
+            border: 2px solid var(--accent);
+            border-radius: 8px;
+            color: white;
+            box-sizing: border-box;
+            outline: none;
+        }
+
+        /* Timer */
+        .timer-display {
+            font-size: 4rem;
+            font-weight: 700;
+            text-align: center;
+            font-variant-numeric: tabular-nums;
+            margin: 10px 0;
+            cursor: pointer;
+        }
+
+        #timer-input {
+            font-size: 4rem;
+            font-weight: 700;
+            text-align: center;
+            background: transparent;
+            color: inherit;
+            border: none;
+            width: 100%;
+            outline: none;
+            font-family: inherit;
+            padding: 0;
+            margin: 0;
+        }
+
+        .timer-controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 10px;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            filter: brightness(1.1);
+            transform: translateY(-1px);
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #404040;
+            color: #ddd;
+        }
+
+        /* Workflow Grid */
+        .workflow-group {
+            margin-bottom: 20px;
+        }
+
+        .group-label {
+            font-size: 0.8rem;
+            color: #666;
+            margin-bottom: 8px;
+            display: block;
+            font-weight: bold;
+        }
+
+        .workflow-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .btn-workflow {
+            background: #363636;
+            color: #e0e0e0;
+            text-align: left;
+            padding: 15px;
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            position: relative;
+        }
+
+        .btn-workflow:hover {
+            border-color: var(--accent);
+            background: #3d3d3d;
+        }
+
+        .btn-workflow span {
+            font-size: 0.8em;
+            opacity: 0.6;
+            font-weight: normal;
+        }
+
+        /* Tiny folder tag */
+        .folder-tag {
+            position: absolute;
+            top: 5px;
+            right: 8px;
+            font-size: 0.65rem;
+            opacity: 0.4;
+            font-family: monospace;
+        }
+
+        .settings-area {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid var(--border);
+            font-size: 0.9em;
+            color: #888;
+        }
+
+        input[type="text"] {
+            background: #1a1a1a;
+            border: 1px solid #555;
+            color: white;
+            padding: 4px;
+            border-radius: 4px;
+            width: 200px;
+        }
+
+        /* Flash Overlay */
+        #flash-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 9999;
+            opacity: 0;
+            transition: opacity 0.1s;
+        }
+
+        .flashing {
+            pointer-events: auto !important;
+            opacity: 1 !important;
+            /* Fix: Make sure it becomes visible */
+            animation: flash-red 0.5s infinite alternate;
+            background: rgba(255, 0, 0, 0.3);
+        }
+
+        @keyframes flash-red {
+            from {
+                background: rgba(255, 0, 0, 0.1);
+                box-shadow: inset 0 0 0 0 red;
+            }
+
+            to {
+                background: rgba(255, 0, 0, 0.6);
+                box-shadow: inset 0 0 50px 20px red;
+            }
+        }
+
+        .nav {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .nav a {
+            color: #888;
+            font-weight: bold;
+            text-decoration: none;
+        }
+
+        .nav a:hover {
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="nav">
+        <a href="adhd.html" style="color: white;">Home</a>
+        <a href="setup.html">Setup</a>
+        <a href="changelog.html">Changelog</a>
+    </div>
+
+    <div id="flash-overlay" onclick="stopFlashing()"></div>
+
+    <div class="container">
+        <div class="card">
+            <h2>🎯 Current Hyperfocus</h2>
+            <input type="text" id="focus-input" placeholder="What is the ONE thing right now?">
+        </div>
+
+        <div class="card">
+            <h2>⏱️ Focus Timer</h2>
+            <div class="timer-display" id="timer" onclick="editTimer()">25:00</div>
+            <div class="timer-controls">
+                <button class="btn-primary" onclick="startTimer()">Start</button>
+                <button class="btn-secondary" onclick="pauseTimer()">Pause</button>
+                <button class="btn-secondary" onclick="resetTimer()">Reset</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>🧠 Protocol Controls</h2>
+
+            <div class="workflow-group">
+                <span class="group-label">ROUTINE & REVIEWS</span>
+                <div class="workflow-grid">
+                    <button class="btn-workflow" onclick="createDaily()">
+                        ☀️ Start Day
+                        <span>Daily Note + Tasks</span>
+                        <div class="folder-tag">1010</div>
+                    </button>
+                    <button class="btn-workflow" onclick="quickCapture()">
+                        📥 Quick Capture
+                        <span>Append to Inbox</span>
+                        <div class="folder-tag">0000</div>
+                    </button>
+                    <button class="btn-workflow" onclick="createWeeklyReview()">
+                        📅 Weekly Review
+                        <span>Plan Next Week</span>
+                        <div class="folder-tag">1020</div>
+                    </button>
+                    <button class="btn-workflow" onclick="createMonthlyReview()">
+                        🗓️ Monthly Review
+                        <span>Check Goals</span>
+                        <div class="folder-tag">1030</div>
+                    </button>
+                </div>
+            </div>
+
+            <div class="workflow-group">
+                <span class="group-label">WORK & OUTPUT</span>
+                <div class="workflow-grid">
+                    <button class="btn-workflow" onclick="createWeeklyStatusReport()">
+                        📊 Weekly Status Report
+                        <span>Summarize this week and completed tasks</span>
+                        <div class="folder-tag">2010</div>
+                    </button>
+                    <button class="btn-workflow" onclick="createMonthlyStatusReport()">
+                        📉 Monthly Status Report
+                        <span>Summarize this month and completed tasks</span>
+                        <div class="folder-tag">2020</div>
+                    </button>
+                    <button class="btn-workflow" onclick="createMeetingNote()">
+                        🤝 Meeting Note
+                        <span>Attendees & Actions</span>
+                        <div class="folder-tag">3000</div>
+                    </button>
+                    <button class="btn-workflow" onclick="createSuggestion()">
+                        📝 New Suggestion
+                        <span>Drafting Content</span>
+                        <div class="folder-tag">4000</div>
+                    </button>
+                    <button class="btn-workflow" onclick="createPerson()">
+                        👤 New Person
+                        <span>CRM & Relationship</span>
+                        <div class="folder-tag">5000</div>
+                    </button>
+                    <button class="btn-workflow" onclick="createTeamDirectory()">
+                        👥 Team Directory
+                        <span>People by Team</span>
+                        <div class="folder-tag">5000</div>
+                    </button>
+                </div>
+            </div>
+
+            <div class="settings-area">
+                <label>Vault Name: <input type="text" id="vault-name" value="MyVault"></label>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- SECURITY ---
+        function sanitizeInput(str) {
+            if (!str) return "";
+            // Remove potentially dangerous characters for YAML/Markdown/Filenames
+            // Specifically newlines which break frontmatter and file paths
+            return str.replace(/[\r\n]+/g, " ").trim();
+        }
+
+        // --- CONFIG & STATE ---
+        const focusInput = document.getElementById('focus-input');
+        const vaultInput = document.getElementById('vault-name');
+
+        if (localStorage.getItem('currentFocus')) focusInput.value = localStorage.getItem('currentFocus');
+        if (localStorage.getItem('vaultName')) vaultInput.value = localStorage.getItem('vaultName');
+
+        focusInput.addEventListener('input', (e) => localStorage.setItem('currentFocus', e.target.value));
+        vaultInput.addEventListener('input', (e) => localStorage.setItem('vaultName', e.target.value));
+
+        // --- TIMER LOGIC ---
+        let initialTime = 25 * 60;
+        let timeLeft = initialTime;
+        let timerId = null;
+
+        function updateDisplay() {
+            const m = Math.floor(timeLeft / 60).toString().padStart(2, '0');
+            const s = (timeLeft % 60).toString().padStart(2, '0');
+            document.getElementById('timer').innerText = `${m}:${s}`;
+            document.title = `${m}:${s} - Focus`;
+        }
+        function startTimer() {
+            if (timerId) return;
+
+            timerId = setInterval(() => {
+                timeLeft--;
+                updateDisplay();
+                if (timeLeft <= 0) {
+                    clearInterval(timerId);
+                    timerId = null;
+                    startFlashing();
+                }
+            }, 1000);
+        }
+        function pauseTimer() { clearInterval(timerId); timerId = null; }
+        function resetTimer() {
+            pauseTimer();
+            stopFlashing();
+            timeLeft = initialTime;
+            updateDisplay();
+        }
+
+        function editTimer() {
+            pauseTimer();
+            const timerEl = document.getElementById('timer');
+            // Check if already editing
+            if (timerEl.querySelector('input')) return;
+
+            const currentText = timerEl.innerText;
+            timerEl.dataset.original = currentText;
+            timerEl.innerHTML = `<input id="timer-input" type="text" value="${currentText}" onblur="saveTimer()" onkeydown="handleTimerInput(event)">`;
+            const input = document.getElementById('timer-input');
+            input.focus();
+            input.select();
+        }
+
+        function saveTimer() {
+            const input = document.getElementById('timer-input');
+            if (!input) return; // Already saved/removed
+
+            const val = input.value.trim();
+            const timerEl = document.getElementById('timer');
+
+            // If unchanged, restore display without updating initialTime (Reset Base)
+            if (val === timerEl.dataset.original) {
+                updateDisplay();
+                return;
+            }
+
+            let newSeconds = initialTime; // Fallback to current setup
+
+            if (val.includes(':')) {
+                const parts = val.split(':');
+                const m = parseInt(parts[0]) || 0;
+                const s = parseInt(parts[1]) || 0;
+                newSeconds = m * 60 + s;
+            } else {
+                const m = parseInt(val);
+                if (!isNaN(m)) {
+                    newSeconds = m * 60;
+                }
+            }
+
+            if (newSeconds > 0) {
+                initialTime = newSeconds;
+                timeLeft = newSeconds;
+            }
+
+            updateDisplay();
+        }
+
+        function handleTimerInput(e) {
+            if (e.key === 'Enter') {
+                e.target.blur(); // Triggers saveTimer
+            }
+        }
+
+        // --- FLASHING LOGIC ---
+        let flashInterval = null;
+        let originalTitle = document.title;
+        let titleState = false;
+
+        function startFlashing() {
+            // Attempt to bring window to front (limitations apply)
+            window.focus();
+
+            // Show overlay
+            const overlay = document.getElementById('flash-overlay');
+            overlay.classList.add('flashing');
+
+            // Title flashing
+            if (!flashInterval) {
+                flashInterval = setInterval(() => {
+                    document.title = titleState ? "🔴 TIME'S UP!" : "⭕ FOCUS NOW!";
+                    titleState = !titleState;
+                }, 500);
+            }
+        }
+
+        function stopFlashing() {
+            const overlay = document.getElementById('flash-overlay');
+            overlay.classList.remove('flashing');
+
+            if (flashInterval) {
+                clearInterval(flashInterval);
+                flashInterval = null;
+            }
+            // Auto-reset to the defined value
+            timeLeft = initialTime;
+            updateDisplay();
+        }
+
+        // --- OBSIDIAN LOGIC ---
+        function getVault() { return encodeURIComponent(vaultInput.value); }
+        function getFormattedDate(date) { return date.toISOString().slice(0, 10); }
+
+        function getWeekNumber(d) {
+            d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+            d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+            var yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+            return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+        }
+
+        // --- 1000 DAILY NOTES ---
+        function createDaily() {
+            const now = new Date();
+            const todayStr = getFormattedDate(now);
+            const yesterdayStr = getFormattedDate(new Date(now.getTime() - 86400000));
+            const tomorrowStr = getFormattedDate(new Date(now.getTime() + 86400000));
+            const year = now.getFullYear();
+            const week = getWeekNumber(now);
+            const folder = "1000 Notes/1010 Daily Notes/";
+            const fileName = `${year}-W${week}`;
+            const filePath = `obsidian://advanced-uri?vault=${getVault()}&filepath=${encodeURIComponent(folder + todayStr + ".md")}`;
+            const content = `---
+type: daily_note
+day: ${now.getDate()}
+week: ${week}
+month: ${now.getMonth() + 1}
+year: ${year}
+---
+# ${todayStr}
+<< [[${folder}${yesterdayStr}|${yesterdayStr}]] | [[${folder}${tomorrowStr}|${tomorrowStr}]] >>
+
+---
+# Today's Tasks
+* [ ] 
+# This week's tasks
+\`\`\`tasks
+not done
+heading includes This week
+group by filename
+\`\`\`
+# This month's tasks
+\`\`\`tasks
+not done
+heading includes This month
+group by filename
+\`\`\`
+
+---
+# Inbox
+\`\`\`dataview
+TABLE file.ctime AS "Created Date"
+FROM #inbox
+SORT file.name ASC 
+\`\`\`
+# Suggestions
+\`\`\`dataview
+TABLE status as Status FROM "4000 Suggestions"
+WHERE status != "completed"
+\`\`\`
+---
+`;
+            // Create/Open daily note
+            window.location.href = `${filePath}&data=${encodeURIComponent(content)}&mode=open`;
+        }
+
+        // --- REVIEWS & CAPTURE ---
+        function quickCapture() {
+            const folder = "0000 Inbox/";
+            const rawTask = prompt("Capture Task:");
+            if (!rawTask) return;
+            const task = sanitizeInput(rawTask);
+            const now = new Date();
+            const todayStr = getFormattedDate(now);
+            if (!task) return;
+            window.location.href = `obsidian://new?vault=${getVault()}&file=${encodeURIComponent(folder + task)}&content=${encodeURIComponent(task + ' #inbox' + '\n# Inbox item for ' + task + '\n- [ ] ')}&append=true`;
+        }
+
+        function createWeeklyReview() {
+            const now = new Date();
+            const month = now.getMonth() + 1;
+            const year = now.getFullYear();
+            const week = getWeekNumber(now);
+            const folder = "1000 Notes/1020 Weekly Notes/";
+            const fileName = `${year}-W${week}`;
+            const filePath = `obsidian://advanced-uri?vault=${getVault()}&filepath=${encodeURIComponent(folder + fileName + ".md")}`;
+            const content = `---
+type: weekly_review
+week: ${week}
+month: ${month}
+year: ${year}
+---
+# Weekly Review ${year}-W${week}
+<< [[${folder}${year}-W${week - 1}|Last week]] | [[${folder}${year}-W${week + 1}|Next week]] >>
+
+## This week
+- [ ] 
+`;
+            window.location.href = `${filePath}&data=${encodeURIComponent(content)}&mode=open`;
+        }
+
+        function createMonthlyReview() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = now.getMonth() + 1;
+            const monthStr = String(month).padStart(2, '0');
+
+            // Calculate previous and next month for navigation
+            const prevDate = new Date(year, now.getMonth() - 1, 1);
+            const nextDate = new Date(year, now.getMonth() + 1, 1);
+
+            const prevStr = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`;
+            const nextStr = `${nextDate.getFullYear()}-${String(nextDate.getMonth() + 1).padStart(2, '0')}`;
+
+            const folder = "1000 Notes/1030 Monthly Notes/";
+            const fileName = `${year}-${monthStr}`;
+            const filePath = `obsidian://advanced-uri?vault=${getVault()}&filepath=${encodeURIComponent(folder + fileName + ".md")}`;
+            const content = `---
+type: monthly_review
+month: ${month}
+year: ${year}
+---
+# Monthly Review ${year}-${monthStr}
+<< [[${folder}${prevStr}|Last month]] | [[${folder}${nextStr}|Next month]] >>
+
+## This Month
+- [ ] 
+`;
+            window.location.href = `${filePath}&data=${encodeURIComponent(content)}&mode=open`;
+        }
+
+        // --- 2000 STATUS REPORTS ---
+        function createWeeklyStatusReport() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const week = getWeekNumber(now);
+            const month = now.getMonth() + 1;
+            const folder = "2000 Status Reports/2010 Weekly Status Reports/";
+            const fileName = `${year}-W${week}`;
+            const filePath = `obsidian://advanced-uri?vault=${getVault()}&filepath=${encodeURIComponent(folder + fileName + ".md")}`;
+            const content = `---
+type: weekly_status_report
+week: ${week}
+month: ${month}
+year: ${year}
+---
+# Status Report - ${year}-W${week}
+<< [[${folder}${year}-W${week - 1}|Last week]] | [[${folder}${year}-W${week + 1}|Next week]] >>
+
+# Accomplishments:
+## Daily Tasks
+\`\`\`dataview
+TABLE without id regexreplace(Tasks.text, "[.*] ", "") AS "Task", file.day AS "Date Completed"
+FROM "1000 Notes/1010 Daily Notes"
+FLATTEN file.tasks AS Tasks
+WHERE Tasks.completed AND year = ${year} AND week = ${week}
+\`\`\`
+## Weekly Tasks
+\`\`\`dataview
+TABLE without id regexreplace(Tasks.text, "[.*] ", "") AS "Task", Tasks.completion AS "Date Completed"
+FROM "1000 Notes/1020 Weekly Notes"
+FLATTEN file.tasks AS Tasks
+WHERE Tasks.completed AND year = ${year} AND week = ${week}
+\`\`\`
+## Monthly Tasks
+\`\`\`dataview
+TABLE without id regexreplace(Tasks.text, "[.*] ", "") AS "Task", Tasks.completion AS "Date Completed"
+FROM "1000 Notes/1030 Monthly Notes"
+FLATTEN file.tasks AS Tasks
+WHERE Tasks.completed AND year = ${year} AND month = ${month}
+\`\`\`
+---
+# Meetings
+\`\`\`dataview
+TABLE without id file.link AS "Meeting", date AS "Date"
+FROM "3000 Meeting Notes"
+WHERE type = "meeting" AND year = ${year} AND week = ${week}
+SORT date ASC
+\`\`\`
+# Challenges
+* 
+# Focus for next week
+* 
+`;
+            // Create/Open stats report note
+            window.location.href = `${filePath}&data=${encodeURIComponent(content)}&mode=open`;
+        }
+
+        function createMonthlyStatusReport() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const week = getWeekNumber(now);
+            const month = now.getMonth() + 1;
+            const monthStr = String(month).padStart(2, '0');
+            const folder = "2000 Status Reports/2020 Monthly Status Reports/";
+            const fileName = `${year}-${monthStr}`;
+            const filePath = `obsidian://advanced-uri?vault=${getVault()}&filepath=${encodeURIComponent(folder + fileName + ".md")}`;
+            const content = `---
+type: monthly_status_report
+month: ${month}
+year: ${year}
+---
+# Monthly Status Report - ${year}-${monthStr}
+<< [[${folder}${year}-${String(month - 1).padStart(2, '0')}|Last month]] | [[${folder}${year}-${String(month + 1).padStart(2, '0')}|Next month]] >>
+
+# Accomplishments
+\`\`\`dataview
+TABLE without id choice(week, "[[2000 Status Reports/2010 Weekly Status Reports/${year}-W" + week + "|Week " + week + "]]", "Monthly Tasks") AS "Week", length(rows.Tasks) AS "Count", rows.Tasks.text AS "Tasks"
+FROM "1000 Notes"
+FLATTEN file.tasks AS Tasks
+WHERE Tasks.completed AND year = ${year} AND month = ${month}
+GROUP BY week
+SORT week DESC
+\`\`\`
+# Meetings
+\`\`\`dataview
+TABLE without id "[[2000 Status Reports/2010 Weekly Status Reports/${year}-W" + week + "|Week " + week + "]]" AS "Week", file.link AS "Meeting", date AS "Date"
+FROM "3000 Meeting Notes"
+WHERE type = "meeting" AND year = ${year} AND month = ${month}
+SORT date ASC
+\`\`\`
+# Challenges
+* 
+# Focus for next month
+* 
+`;
+            window.location.href = `${filePath}&data=${encodeURIComponent(content)}&mode=open`;
+        }
+
+        // --- 3000 MEETING NOTES ---
+        function createMeetingNote() {
+            const rawTitle = prompt("Meeting Title:");
+            if (!rawTitle) return;
+            const title = sanitizeInput(rawTitle);
+            const now = new Date();
+            const dateStr = getFormattedDate(now);
+            const day = now.getDate();
+            const week = getWeekNumber(now);
+            const month = now.getMonth() + 1;
+            const year = now.getFullYear();
+            const folder = "3000 Meeting Notes/";
+            const fileName = `${title} - ${dateStr}`;
+            const content = `---
+type: meeting
+day: ${day}
+week: ${week}
+month: ${month}
+year: ${year}
+---
+# Time
+Start: 
+End: 
+# Attendees
+## ![[]]
+## ![[]]
+## ![[]]
+## ![[]]
+# Notes
+* 
+* 
+`;
+            window.location.href = `obsidian://new?vault=${getVault()}&file=${encodeURIComponent(folder + fileName)}&content=${encodeURIComponent(content)}`;
+        }
+
+        // --- 4000 SUGGESTIONS ---
+        function createSuggestion() {
+            const rawTitle = prompt("Suggestion Title:");
+            if (!rawTitle) return;
+            const title = sanitizeInput(rawTitle);
+            const folder = "4000 Suggestions/";
+
+            const content = `---
+type: suggestion
+status: not-started
+---
+# ${title}
+## Who
+<Who does this affect?>
+## What
+<What is the core suggestion?>
+## Why
+<Why does this suggestion matter?>
+## How
+<How can we implement the suggestion?>
+## When
+<When can we implement the suggestion?>
+`;
+            window.location.href = `obsidian://new?vault=${getVault()}&file=${encodeURIComponent(folder + title)}&content=${encodeURIComponent(content)}`;
+        }
+
+        // --- 5000 PEOPLE ---
+        function createPerson() {
+            const rawName = prompt("Person's Name:");
+            if (!rawName) return;
+            const name = sanitizeInput(rawName);
+            // Structure puts people in specific files prefixed with @
+            const folder = "5000 People/";
+            const fileName = `@${name}`;
+
+            const content = `---
+type: person
+aliases: [${name}]
+team: 
+role: 
+manager: 
+---
+# ${name}
+Role:
+Team: 
+Manager: 
+
+# Meetings with them
+\`\`\`dataview
+LIST FROM "3000 Meeting Notes"
+WHERE contains(file.outlinks, this.file.link)
+\`\`\`
+`;
+            window.location.href = `obsidian://new?vault=${getVault()}&file=${encodeURIComponent(folder + fileName)}&content=${encodeURIComponent(content)}`;
+        }
+
+        function createTeamDirectory() {
+            const folder = "5000 People/";
+            const fileName = "Team Directory";
+
+            const content = `---
+type: directory
+---
+# Team Directory
+
+\`\`\`dataview
+TABLE without id team AS "Team", map(rows, (r) => link(r.file.link, r.file.name) + " (" + r.role + ")") AS "People (Role)"
+FROM "5000 People"
+WHERE team != null
+GROUP BY team
+SORT team ASC
+\`\`\`
+`;
+            window.location.href = `obsidian://new?vault=${getVault()}&file=${encodeURIComponent(folder + fileName)}&content=${encodeURIComponent(content)}&overwrite=true`;
+        }
+    </script>
+    <script src="quotes.js"></script>
+    <footer style="font-size: 0.7rem; text-align: center; color: #666; margin-top: 2rem; margin-bottom: 2rem;">
+        Free & Open-Source Software, Developed by <a href="https://github.com/sudosocks" target="_blank"
+            rel="noopener noreferrer" style="color: inherit; text-decoration: underline;">sudosocks</a>
+        <br><br>Please consider supporting my work at <a href="https://ko-fi.com/sudosocks" target="_blank"
+            rel="noopener noreferrer" style="color: inherit; text-decoration: underline;">Ko-fi</a>
+        <br><br><br><br><span id="quote-display">Meow!</span>
+    </footer>
+</body>
+
+</html>
