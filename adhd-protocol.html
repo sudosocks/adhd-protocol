@@ -185,13 +185,22 @@
             color: #888;
         }
 
-        input[type="text"] {
+        input[type="text"],
+        select {
             background: #1a1a1a;
             border: 1px solid #555;
             color: white;
             padding: 4px;
             border-radius: 4px;
+        }
+
+        input[type="text"] {
             width: 200px;
+        }
+
+        select {
+            width: 100%;
+            margin-top: 5px;
         }
 
         /* Flash Overlay */
@@ -338,6 +347,10 @@
 
             <div class="settings-area">
                 <label>Vault Name: <input type="text" id="vault-name" value="MyVault"></label>
+                <br><br>
+                <label>Timezone:
+                    <select id="timezone-select"></select>
+                </label>
             </div>
         </div>
 
@@ -355,12 +368,31 @@
         // --- CONFIG & STATE ---
         const focusInput = document.getElementById('focus-input');
         const vaultInput = document.getElementById('vault-name');
+        const timezoneSelect = document.getElementById('timezone-select');
 
         if (localStorage.getItem('currentFocus')) focusInput.value = localStorage.getItem('currentFocus');
         if (localStorage.getItem('vaultName')) vaultInput.value = localStorage.getItem('vaultName');
 
+        // Populate timezones
+        const timezones = Intl.supportedValuesOf('timeZone');
+        timezones.forEach(tz => {
+            const option = document.createElement('option');
+            option.value = tz;
+            option.textContent = tz;
+            timezoneSelect.appendChild(option);
+        });
+
+        // Set default or saved timezone
+        const savedTimezone = localStorage.getItem('timezone');
+        if (savedTimezone && timezones.includes(savedTimezone)) {
+            timezoneSelect.value = savedTimezone;
+        } else {
+            timezoneSelect.value = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        }
+
         focusInput.addEventListener('input', (e) => localStorage.setItem('currentFocus', e.target.value));
         vaultInput.addEventListener('input', (e) => localStorage.setItem('vaultName', e.target.value));
+        timezoneSelect.addEventListener('change', (e) => localStorage.setItem('timezone', e.target.value));
 
         // --- TIMER LOGIC ---
         let initialTime = 25 * 60;
@@ -486,31 +518,82 @@
 
         // --- OBSIDIAN LOGIC ---
         function getVault() { return encodeURIComponent(vaultInput.value); }
-        function getFormattedDate(date) { return date.toISOString().slice(0, 10); }
+        function getTimezone() { return timezoneSelect.value; }
 
-        function getWeekNumber(d) {
-            d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+        // Helper to get a Date object shifted to the selected timezone, 
+        // effectively pretending "now" in that timezone is "now" in UTC or local, for easy component extraction.
+        // Actually, a better approach for simple YYYY-MM-DD formatting in a specific timezone:
+        function getZonedDateString(date, timezone) {
+            return new Intl.DateTimeFormat('en-CA', {
+                timeZone: timezone,
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            }).format(date);
+        }
+
+        // We need a way to perform date math (add/subtract days) relative to the zoned date.
+        // The easiest way is to create a Date object that *represents* the time in the target timezone
+        // but acts as a local date for .getDate() etc. 
+        // However, converting back and forth can be tricky with DST.
+        // Let's stick to using the current timestamp and formatting it into the target timezone.
+
+        function getZonedDateParts(date, timezone) {
+            const formatter = new Intl.DateTimeFormat('en-US', {
+                timeZone: timezone,
+                year: 'numeric',
+                month: 'numeric',
+                day: 'numeric',
+                hour: 'numeric',
+                minute: 'numeric',
+                second: 'numeric',
+                hour12: false
+            });
+
+            const [
+                { value: month }, , { value: day }, , { value: year }
+            ] = formatter.formatToParts(date);
+
+            return {
+                year: parseInt(year),
+                month: parseInt(month),
+                day: parseInt(day)
+            };
+        }
+
+        function getWeekNumber(date, timezone) {
+            // Create a date object that corresponds to the date in the target timezone
+            // This is a "fake" UTC date constructed from the timezone's components
+            const parts = getZonedDateParts(date, timezone);
+            const d = new Date(Date.UTC(parts.year, parts.month - 1, parts.day));
+
             d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
-            var yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+            const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
             return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
         }
 
         // --- 1000 DAILY NOTES ---
         function createDaily() {
+            const timezone = getTimezone();
             const now = new Date();
-            const todayStr = getFormattedDate(now);
-            const yesterdayStr = getFormattedDate(new Date(now.getTime() - 86400000));
-            const tomorrowStr = getFormattedDate(new Date(now.getTime() + 86400000));
-            const year = now.getFullYear();
-            const week = getWeekNumber(now);
+            const todayStr = getZonedDateString(now, timezone);
+            const yesterdayStr = getZonedDateString(new Date(now.getTime() - 86400000), timezone);
+            const tomorrowStr = getZonedDateString(new Date(now.getTime() + 86400000), timezone);
+
+            const parts = getZonedDateParts(now, timezone);
+            const year = parts.year;
+            const week = getWeekNumber(now, timezone);
+            const day = parts.day;
+            const month = parts.month;
+
             const folder = "1000 Notes/1010 Daily Notes/";
             const fileName = `${year}-W${week}`;
             const filePath = `obsidian://advanced-uri?vault=${getVault()}&filepath=${encodeURIComponent(folder + todayStr + ".md")}`;
             const content = `---
 type: daily_note
-day: ${now.getDate()}
+day: ${day}
 week: ${week}
-month: ${now.getMonth() + 1}
+month: ${month}
 year: ${year}
 ---
 # ${todayStr}
@@ -551,22 +634,32 @@ WHERE status != "completed"
         }
 
         // --- REVIEWS & CAPTURE ---
+        // --- REVIEWS & CAPTURE ---
         function quickCapture() {
             const folder = "0000 Inbox/";
             const rawTask = prompt("Capture Task:");
             if (!rawTask) return;
             const task = sanitizeInput(rawTask);
+            // We just need today's date for appending if needed, but the current implementation 
+            // of the link/content doesn't strictly use the date EXCEPT potentially in the future.
+
+            // Wait, the original code used todayStr?
+            const timezone = getTimezone();
             const now = new Date();
-            const todayStr = getFormattedDate(now);
+            const todayStr = getZonedDateString(now, timezone);
+
             if (!task) return;
             window.location.href = `obsidian://new?vault=${getVault()}&file=${encodeURIComponent(folder + task)}&content=${encodeURIComponent(task + ' #inbox' + '\n# Inbox item for ' + task + '\n- [ ] ')}&append=true`;
         }
 
         function createWeeklyReview() {
+            const timezone = getTimezone();
             const now = new Date();
-            const month = now.getMonth() + 1;
-            const year = now.getFullYear();
-            const week = getWeekNumber(now);
+            const parts = getZonedDateParts(now, timezone);
+            const month = parts.month;
+            const year = parts.year;
+            const week = getWeekNumber(now, timezone);
+
             const folder = "1000 Notes/1020 Weekly Notes/";
             const fileName = `${year}-W${week}`;
             const filePath = `obsidian://advanced-uri?vault=${getVault()}&filepath=${encodeURIComponent(folder + fileName + ".md")}`;
@@ -586,17 +679,24 @@ year: ${year}
         }
 
         function createMonthlyReview() {
+            const timezone = getTimezone();
             const now = new Date();
-            const year = now.getFullYear();
-            const month = now.getMonth() + 1;
+            const parts = getZonedDateParts(now, timezone);
+            const year = parts.year;
+            const month = parts.month;
             const monthStr = String(month).padStart(2, '0');
 
-            // Calculate previous and next month for navigation
-            const prevDate = new Date(year, now.getMonth() - 1, 1);
-            const nextDate = new Date(year, now.getMonth() + 1, 1);
+            // Calculate previous and next month for navigation safely
+            let prevMonth = month - 1;
+            let prevYear = year;
+            if (prevMonth < 1) { prevMonth = 12; prevYear--; }
 
-            const prevStr = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`;
-            const nextStr = `${nextDate.getFullYear()}-${String(nextDate.getMonth() + 1).padStart(2, '0')}`;
+            let nextMonth = month + 1;
+            let nextYear = year;
+            if (nextMonth > 12) { nextMonth = 1; nextYear++; }
+
+            const prevStr = `${prevYear}-${String(prevMonth).padStart(2, '0')}`;
+            const nextStr = `${nextYear}-${String(nextMonth).padStart(2, '0')}`;
 
             const folder = "1000 Notes/1030 Monthly Notes/";
             const fileName = `${year}-${monthStr}`;
@@ -617,10 +717,13 @@ year: ${year}
 
         // --- 2000 STATUS REPORTS ---
         function createWeeklyStatusReport() {
+            const timezone = getTimezone();
             const now = new Date();
-            const year = now.getFullYear();
-            const week = getWeekNumber(now);
-            const month = now.getMonth() + 1;
+            const parts = getZonedDateParts(now, timezone);
+            const year = parts.year;
+            const week = getWeekNumber(now, timezone);
+            const month = parts.month;
+
             const folder = "2000 Status Reports/2010 Weekly Status Reports/";
             const fileName = `${year}-W${week}`;
             const filePath = `obsidian://advanced-uri?vault=${getVault()}&filepath=${encodeURIComponent(folder + fileName + ".md")}`;
@@ -673,10 +776,15 @@ SORT date ASC
         }
 
         function createMonthlyStatusReport() {
+            const timezone = getTimezone();
             const now = new Date();
-            const year = now.getFullYear();
-            const week = getWeekNumber(now);
-            const month = now.getMonth() + 1;
+            const parts = getZonedDateParts(now, timezone);
+            const year = parts.year;
+            const month = parts.month;
+            // We need week for some reason? No, just month/year for file name. The week is calculated inside?
+            // "const week = getWeekNumber(now);" was in original code.
+            const week = getWeekNumber(now, timezone);
+
             const monthStr = String(month).padStart(2, '0');
             const folder = "2000 Status Reports/2020 Monthly Status Reports/";
             const fileName = `${year}-${monthStr}`;
@@ -718,12 +826,16 @@ SORT date ASC
             const rawTitle = prompt("Meeting Title:");
             if (!rawTitle) return;
             const title = sanitizeInput(rawTitle);
+
+            const timezone = getTimezone();
             const now = new Date();
-            const dateStr = getFormattedDate(now);
-            const day = now.getDate();
-            const week = getWeekNumber(now);
-            const month = now.getMonth() + 1;
-            const year = now.getFullYear();
+            const parts = getZonedDateParts(now, timezone);
+            const dateStr = getZonedDateString(now, timezone);
+            const day = parts.day;
+            const week = getWeekNumber(now, timezone);
+            const month = parts.month;
+            const year = parts.year;
+
             const folder = "3000 Meeting Notes/";
             const fileName = `${title} - ${dateStr}`;
             const content = `---
@@ -786,8 +898,8 @@ status: not-started
             const content = `---
 type: person
 aliases: [${name}]
+role:
 team: 
-role: 
 manager: 
 ---
 # ${name}
