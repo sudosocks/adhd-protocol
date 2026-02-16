@@ -761,10 +761,10 @@ WHERE Tasks.completed AND year = ${year} AND month = ${month}
 ---
 # Meetings
 \`\`\`dataview
-TABLE without id file.link AS "Meeting", date AS "Date"
+TABLE without id file.link AS "Meeting", default(date, file.cday) AS "Date"
 FROM "3000 Meeting Notes"
 WHERE type = "meeting" AND year = ${year} AND week = ${week}
-SORT date ASC
+SORT default(date, file.cday) ASC
 \`\`\`
 # Challenges
 * 
@@ -808,10 +808,10 @@ SORT week DESC
 \`\`\`
 # Meetings
 \`\`\`dataview
-TABLE without id "[[2000 Status Reports/2010 Weekly Status Reports/${year}-W" + week + "|Week " + week + "]]" AS "Week", file.link AS "Meeting", date AS "Date"
+TABLE without id "[[2000 Status Reports/2010 Weekly Status Reports/${year}-W" + week + "|Week " + week + "]]" AS "Week", file.link AS "Meeting", default(date, file.cday) AS "Date"
 FROM "3000 Meeting Notes"
 WHERE type = "meeting" AND year = ${year} AND month = ${month}
-SORT date ASC
+SORT default(date, file.cday) ASC
 \`\`\`
 # Challenges
 * 
@@ -840,6 +840,7 @@ SORT date ASC
             const fileName = `${title} - ${dateStr}`;
             const content = `---
 type: meeting
+date: ${dateStr}
 day: ${day}
 week: ${week}
 month: ${month}
