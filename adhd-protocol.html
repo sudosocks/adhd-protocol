@@ -573,31 +573,40 @@
         }
 
         // --- 1000 DAILY NOTES ---
+        // --- 1000 DAILY NOTES ---
         function createDaily() {
             const timezone = getTimezone();
             const now = new Date();
-            const todayStr = getZonedDateString(now, timezone);
-            const yesterdayStr = getZonedDateString(new Date(now.getTime() - 86400000), timezone);
-            const tomorrowStr = getZonedDateString(new Date(now.getTime() + 86400000), timezone);
 
-            const parts = getZonedDateParts(now, timezone);
-            const year = parts.year;
-            const week = getWeekNumber(now, timezone);
-            const day = parts.day;
-            const month = parts.month;
+            // Helpers for path generation
+            const getPath = (d) => {
+                const parts = getZonedDateParts(d, timezone);
+                const w = getWeekNumber(d, timezone);
+                const dateStr = getZonedDateString(d, timezone);
+                return {
+                    folder: `1000 Notes/1010 Daily Notes/${parts.year}-W${w}/`,
+                    file: dateStr,
+                    year: parts.year,
+                    week: w,
+                    day: parts.day,
+                    month: parts.month
+                };
+            };
 
-            const folder = "1000 Notes/1010 Daily Notes/";
-            const fileName = `${year}-W${week}`;
-            const filePath = `obsidian://advanced-uri?vault=${getVault()}&filepath=${encodeURIComponent(folder + todayStr + ".md")}`;
+            const today = getPath(now);
+            const yesterday = getPath(new Date(now.getTime() - 86400000));
+            const tomorrow = getPath(new Date(now.getTime() + 86400000));
+
+            const filePath = `obsidian://advanced-uri?vault=${getVault()}&filepath=${encodeURIComponent(today.folder + today.file + ".md")}`;
             const content = `---
 type: daily_note
-day: ${day}
-week: ${week}
-month: ${month}
-year: ${year}
+day: ${today.day}
+week: ${today.week}
+month: ${today.month}
+year: ${today.year}
 ---
-# ${todayStr}
-<< [[${folder}${yesterdayStr}|${yesterdayStr}]] | [[${folder}${tomorrowStr}|${tomorrowStr}]] >>
+# ${today.file}
+<< [[${yesterday.folder}${yesterday.file}|${yesterday.file}]] | [[${tomorrow.folder}${tomorrow.file}|${tomorrow.file}]] >>
 
 ---
 # Today's Tasks
@@ -836,7 +845,7 @@ SORT default(date, file.cday) ASC
             const month = parts.month;
             const year = parts.year;
 
-            const folder = "3000 Meeting Notes/";
+            const folder = `3000 Meeting Notes/${year}-W${week}/`;
             const fileName = `${title} - ${dateStr}`;
             const content = `---
 type: meeting
@@ -856,10 +865,7 @@ End:
 ## ![[]]
 
 # Apologies
-## ![[]]
-## ![[]]
-## ![[]]
-## ![[]]
+- 
 
 # Notes
 * 
